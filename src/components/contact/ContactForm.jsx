@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 import Button from "../reusable/Button";
 import FormInput from "../reusable/FormInput";
 import { validateForm } from "./utils";
+
+import { toast } from "react-toastify";
 
 const initialState = {
   name: "",
@@ -9,37 +13,47 @@ const initialState = {
   subject: "",
   message: "",
   errors: {},
-  ...{
-    email: "ivk@gmail.com",
-    name: "Krishna 123",
-    subject: "123",
-    message: "ok ok",
-  },
+  process: false,
 };
 
 const ContactForm = () => {
   const [form, setForm] = useState(initialState);
 
   const onSubmit = () => {
+    setForm({ ...form, process: true });
     const { errors, isValid } = validateForm(form);
 
     if (isValid) {
       const payload = { ...form };
       delete payload.errors;
+      delete payload.process;
 
-      fetch(
-        "https://2437vjwbfg.execute-api.ap-northeast-1.amazonaws.com/default/portfilio-requests",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      )
-        .then((response) => response.json())
-        .then((data) => console.log("success -->", data))
-        .catch((error) => console.error("error ->", error));
+      axios
+        .post(
+          "https://5sv1twcieh.execute-api.ap-northeast-1.amazonaws.com/test",
+          payload
+        )
+        .then((response) => {
+          if (response.data?.body === "Error") {
+            toast("Something went wrong, try again in some time.", {
+              type: "error",
+            });
+          } else {
+            toast(
+              "Thank you for reaching out to me, will get back to you soon via email.",
+              {
+                type: "success",
+              }
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("error ->", error);
+          toast("Something went wrong, try again in some time.", {
+            type: "error",
+          });
+        })
+        .finally(() => setForm(initialState));
     } else {
       setForm({ ...form, errors });
     }
@@ -120,6 +134,7 @@ const ContactForm = () => {
               title="Send Message"
               type="submit"
               aria-label="Send Message"
+              disabled={form.process}
             />
           </div>
         </form>
